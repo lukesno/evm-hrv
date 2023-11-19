@@ -15,3 +15,6 @@ Run ```pip install opencv-python``` in your terminal before running!
 To run program, use ```python [filename]```\
 To close program, click esc
 
+# future wishes/issues
+Only make it detect for the amount of time we are collecting data for which is 10-15 minutes. For now we close the window manually to stope recording.
+
