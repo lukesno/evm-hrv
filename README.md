@@ -1,20 +1,10 @@
-# opencv-head-detector
-Basic scripts that output a video of a detected human head in your webcam
+# Pipeline
+1) opencv-head-detector\face_detection.py
+2) opencv-red-channel-extraction\extract_red_channel.py
+3) opencv-red-time-plot\plot_red_channel_over_time.py
+4) opencv-peak-analysis\peak_analysis.py
 
+To run each script find instructions in each README
 
-face_detection.py -> crops screen to first detected head, stays on it for 10 minutes\
-auto_lock_detection.py -> crops screen dynamically to detected head after 33ms. May be more inaccurate depending on environment
-\
-\
-\
-Prereqs:
-Python3, opencv\
-Run ```pip install opencv-python``` in your terminal before running!
-\
-\
-To run program, use ```python [filename]```\
-To close program, click esc
-
-# future wishes/issues
-Only make it detect for the amount of time we are collecting data for which is 10-15 minutes. For now we close the window manually to stope recording.
-
+# future
+We want each script to subsequently call each other.

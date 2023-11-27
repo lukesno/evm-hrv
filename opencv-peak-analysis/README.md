@@ -4,7 +4,7 @@
 To run program, use
 `python peak_analysis.py [filename] --height [value] --distance [value]`
 Example:
-```python peak_analysis.py ../opencv-head-detector luke_face_after_EVM_after_red_channel_extraction_red_intensity.npy --height 0.8 --distance 20```
+```python peak_analysis.py ../opencv-head-detector/luke_face_after_EVM_after_red_channel_extraction_red_intensity.npy --height 0.8 --distance 20```
 To close program, close the last plot.
 
 # peak detection parameters

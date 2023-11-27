@@ -44,12 +44,17 @@ std_rr_interval = np.std(peak_time_intervals)
 # Frequency-domain HRV features (you may need additional libraries for spectral analysis)
 # You can use methods like FFT to analyze the frequency content of the signal
 # Frequency-domain HRV features using FFT
-fft_result = fft(red_intensity_over_time)
+fft_result = fft(red_intensity_over_time) # fft is used to compute the FFT of the red intensity signal over time 
 frequencies = np.fft.fftfreq(len(fft_result), d=1/fps)
+# calculates the frequencies associated with the FFT result. It uses np.fft.fftfreq to
+# generate an array of frequencies based on the length of the FFT result (len(fft_result)) 
+# and the sampling rate (fps).
 positive_frequencies = frequencies[:len(frequencies)//2]
 fft_magnitude = np.abs(fft_result[:len(fft_result)//2])
+#  extracts the magnitude spectrum of the positive frequencies
 
 # Plot the FFT result
+# It visualizes how the magnitude of the signal varies across different frequencies.
 plt.figure()
 plt.plot(positive_frequencies, fft_magnitude)
 plt.xlabel('Frequency (Hz)')
@@ -71,3 +76,10 @@ hf_power = np.sum(fft_magnitude[hf_indices])
 print("Time Intervals between Peaks (seconds):", peak_time_intervals)
 print("Mean RR Interval:", mean_rr_interval)
 print("Standard Deviation of RR Intervals:", std_rr_interval)
+
+# Visualize HRV features
+plt.figure()
+plt.bar(['Mean RR Interval', 'Standard Deviation of RR Intervals'], [mean_rr_interval, std_rr_interval], color=['blue', 'orange'])
+plt.ylabel('Time (sec)')
+plt.title('HRV Features')
+plt.show()
