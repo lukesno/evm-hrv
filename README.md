@@ -1,8 +1,9 @@
 # Pipeline
-1) opencv-head-detector\face_detection.py
-2) opencv-red-channel-extraction\extract_red_channel.py
-3) opencv-red-time-plot\plot_red_channel_over_time.py
-4) opencv-peak-analysis\peak_analysis.py
+1) head-detector-opencv\face_detection.py
+2) EVM -> http://people.csail.mit.edu/mrub/evm/#code
+3) opencv-red-channel-extraction\extract_red_channel.py
+4) opencv-red-time-plot\plot_red_channel_over_time.py
+5) opencv-peak-analysis\peak_analysis.py
 
 To run each script find instructions in each README
 
