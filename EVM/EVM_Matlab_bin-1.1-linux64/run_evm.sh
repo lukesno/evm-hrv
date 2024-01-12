@@ -33,6 +33,7 @@ else
       args="${args} ${token}" 
       shift
   done
+  echo "${exe_dir}"/evm $args
   "${exe_dir}"/evm $args
 fi
 exit

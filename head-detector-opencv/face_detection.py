@@ -19,6 +19,7 @@ print('* Capture height:', cap_height)
 print('* Capture FPS:', cap_fps, 'ideal wait time between frames:', fps_sleep, 'ms')
 
 
+
 # Set up the video capture width and height for compatibility
 # cap.set(cv2.CV_CAP_PROP_FPS, 30)
 cap.set(3, 1280)  # Set width as 640
@@ -59,6 +60,7 @@ while True:
             height, width = face_roi.shape[:2]
             out = cv2.VideoWriter('face_output.mp4', fourcc, 15.0, (height, width))
             start_time = time.time()
+            print("Current time: " + time.ctime(start_time))
 
     if face_coords is not None:
         # Use the stored coordinates to keep the same face frame
@@ -81,6 +83,7 @@ while True:
         break
 
 # Release the VideoCapture object and close display window
+print("End time: " + str(time.ctime(time.time())))
 cap.release()
 out.release()  # Release the VideoWriter object
 cv2.destroyAllWindows()
