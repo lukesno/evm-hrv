@@ -1,4 +1,4 @@
-# opencv-head-detector
+# head-detector-opencv
 Basic scripts that output a video of a detected human head in your webcam
 
 
@@ -12,7 +12,7 @@ Python3, opencv\
 Run ```pip install opencv-python``` in your terminal before running!
 \
 \
-To run program, use ```python [filename]```\
+To run program, use ```python auto_lock_detection.py```\
 To close program, click esc
 
 # future wishes/issues
