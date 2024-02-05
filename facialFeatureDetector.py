@@ -40,6 +40,8 @@ lc_red_intensity_over_time = []
 rc_red_intensity_over_time = []
 
 blank_frame = np.ones((height, width, 3), dtype=np.uint8) * 255  # Initialize with white pixels (for RGB images)
+blank_image = Image.fromarray(blank_frame, 'RGB')
+blank_image = cv2.resize(blank_frame, (cheek_frame_size, cheek_frame_size))
 prev_rc_roi = blank_frame
 prev_lc_roi = blank_frame
 
@@ -122,22 +124,22 @@ while True:
 
         # cv2.imshow("Cheeks", combined_cheeks)
         if lc_roi.size:
-            prev_lc_roi = lc_roi
             lc_image = Image.fromarray(lc_roi, 'RGB')
             lc_image = cv2.resize(lc_roi, (cheek_frame_size, cheek_frame_size))
+            prev_lc_image = lc_roi
             cv2.imshow(f"Left Cheek", lc_image)
             lc_vid_writer.write(lc_image)
         else:
-            lc_vid_writer.write(Image.fromarray(prev_lc_roi, 'RGB'))
+            lc_vid_writer.write(prev_lc_image)
 
         if rc_roi.size:
-            prev_rc_roi = rc_roi
             rc_image = Image.fromarray(rc_roi, 'RGB')
             rc_image = cv2.resize(rc_roi, (cheek_frame_size, cheek_frame_size))
+            prev_rc_image = rc_image
             cv2.imshow(f"Right Cheek", rc_image)
             rc_vid_writer.write(rc_image)
         else:
-            rc_vid_writer.write(prev_rc_roi)
+            lc_vid_writer.write(prev_rc_image)
 
         # One face only
         break
