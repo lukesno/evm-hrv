@@ -14,14 +14,14 @@ try {
     $final_dir = Join-Path -Path $output_dir -ChildPath $file_name
 
     # Check if the directory already exists
-    if (Test-Path -Path $final_dir -PathType Container) {
-        Write-Host "###########################################################################################"
-        Write-Host "Directory '$final_dir' already exists. Rename something, or remove the existing directory`n"
-        Write-Host "Powershell:"
-        Write-Host "    Remove-Item -Path 'C:\Path\To\Your\Directory' -Recurse"
-        Write-Host "###########################################################################################"
-        exit
-    }
+    # if (Test-Path -Path $final_dir -PathType Container) {
+    #     Write-Host "###########################################################################################"
+    #     Write-Host "Directory '$final_dir' already exists. Rename something, or remove the existing directory`n"
+    #     Write-Host "Powershell:"
+    #     Write-Host "    Remove-Item -Path 'C:\Path\To\Your\Directory' -Recurse"
+    #     Write-Host "###########################################################################################"
+    #     exit
+    # }
 
     New-Item -ItemType Directory -Path $final_dir -Force | Out-Null
     Write-Host "Created directory: $final_dir"

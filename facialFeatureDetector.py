@@ -223,6 +223,8 @@ def peak_analysis(input_file, output_dir, height, distance):
 
 # start measuring the time of the program
 time_start = time.time()    
+new_pos_per_n_frame = 5 
+cur_pos_frame_cnt   = 0
 
 while True:
     # Capture frame-by-frame
@@ -245,36 +247,44 @@ while True:
         # Get the facial landmarks
         landmarks = landmark_predictor(gray, face)
 
-        # Calculate pixels corresponding to left cheek
-        LC_top   = landmarks.part(36).y
-        LC_bot   = landmarks.part(31).y
-        LC_left  = landmarks.part(36).x 
-        LC_right = landmarks.part(31).x
+
+        if cur_pos_frame_cnt == new_pos_per_n_frame:
+            cur_pos_frame_cnt = 0
+
+        if cur_pos_frame_cnt == 0:
+            # Calculate pixels corresponding to left cheek
+            LC_top   = landmarks.part(36).y
+            LC_bot   = landmarks.part(31).y
+            LC_left  = landmarks.part(36).x 
+            LC_right = landmarks.part(31).x
         
-        LC_top   += (LC_bot - LC_top)//3
-        LC_bot   += (LC_bot - LC_top)//3
-        LC_left  -= (LC_right - LC_left)//3
-        LC_right -= (LC_right - LC_left)//9
+            LC_top   += (LC_bot - LC_top)//3
+            LC_bot   += (LC_bot - LC_top)//3
+            LC_left  -= (LC_right - LC_left)//3
+            LC_right -= (LC_right - LC_left)//9
 
-        # Calculate pixels corresponding to right cheek
-        RC_top   = landmarks.part(45).y
-        RC_bot   = landmarks.part(35).y
-        RC_left  = landmarks.part(35).x
-        RC_right = landmarks.part(45).x 
+            # Calculate pixels corresponding to right cheek
+            RC_top   = landmarks.part(45).y
+            RC_bot   = landmarks.part(35).y
+            RC_left  = landmarks.part(35).x
+            RC_right = landmarks.part(45).x 
 
-        RC_top   += (RC_bot - RC_top)//3
-        RC_bot   += (RC_bot - RC_top)//3
-        RC_right += (RC_right - RC_left)//3
-        RC_left  += (RC_right - RC_left)//9
+            RC_top   += (RC_bot - RC_top)//3
+            RC_bot   += (RC_bot - RC_top)//3
+            RC_right += (RC_right - RC_left)//3
+            RC_left  += (RC_right - RC_left)//9
+        
+        cur_pos_frame_cnt += 1
+
         eyebrow_top = min(landmarks.part(19).y, landmarks.part(24).y)
         # Draw box censor around the eyes and eyebrows
         cv2.rectangle(frame, (landmarks.part(1).x, eyebrow_top), (landmarks.part(15).x, landmarks.part(29).y), (0,0,0), -1)
 
-        # Draw landmarks on the face
-        for i in range(68):
-            x, y = landmarks.part(i).x, landmarks.part(i).y
-            cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)
-            cv2.putText(frame, str(i), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
+        # # Draw landmarks on the face
+        # for i in range(68):
+        #     x, y = landmarks.part(i).x, landmarks.part(i).y
+        #     cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)
+        #     cv2.putText(frame, str(i), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
 
         # Draw rectangles around cheeks
         cv2.rectangle(frame, (LC_left, LC_top), (LC_right, LC_bot), (0, 0, 255), 2)

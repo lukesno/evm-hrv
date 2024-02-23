@@ -20,23 +20,23 @@ def peak_analysis(input_file, output_dir, height, distance):
     count     = 0
     rollingAve = 0
 
-    for i, data in enumerate(red_intensity_over_time):
-        count      += 1
-        rollingAve = rollingAve * (count - 1) / count + data / count
-        red_intensity_over_time[i] -= rollingAve
-        red_intensity_over_time[i] *= 100
+    # for i, data in enumerate(red_intensity_over_time):
+    #     count      += 1
+    #     rollingAve = rollingAve * (count - 1) / count + data / count
+    #     red_intensity_over_time[i] -= rollingAve
+    #     red_intensity_over_time[i] *= 100
 
-    sos         = butter(3, [1, 2.33], "bandpass", output='sos', fs=30)
-    filteredSig = sosfilt(sos, red_intensity_over_time) 
+    # sos         = butter(3, [1, 2.33], "bandpass", output='sos', fs=30)
+    # red_intensity_over_time = sosfilt(sos, red_intensity_over_time) 
 
     # Perform peak detection
-    peaks, _ = find_peaks(filteredSig, height=height, distance=distance)
+    peaks, _ = find_peaks(red_intensity_over_time, height=height, distance=distance)
 
     # Plot the red intensity over time
-    plt.plot(time, filteredSig, label='Red Intensity')
+    plt.plot(time, red_intensity_over_time, label='Red Intensity')
 
     # Mark the detected peaks on the plotw
-    plt.plot(time[peaks], filteredSig[peaks], 'rx', label='Peaks')
+    plt.plot(time[peaks], red_intensity_over_time[peaks], 'rx', label='Peaks')
 
     # Customize the plot
     plt.title(f'{filename_prefix} Intensity with Detected Peaks')
@@ -45,7 +45,7 @@ def peak_analysis(input_file, output_dir, height, distance):
     plt.legend()
 
     # Save time and red intensity data as .npz file in the working directory
-    output_peak_png_path= os.path.join(output_dir, filename_prefix + '_labeled_peaks_plot.png')
+    output_peak_png_path= os.path.join(output_dir, f'labeled_peaks_plot_{len(peaks)}_peaks.png')
     # Save the plot as a .png file
     plt.savefig(output_peak_png_path)
     print(f"Peak Plots saved as '{output_peak_png_path}'")

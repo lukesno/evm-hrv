@@ -1,0 +1,11 @@
+# Ignore everything under any 'res' directory
+**/res/*
+
+# Ignore any '.npz' files
+*.npz
+
+# Ignore 'vids' directory
+/vids/
+
+**/*.avi
+**/*.mp4
