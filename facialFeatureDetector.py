@@ -1,3 +1,5 @@
+#===========================================================
+# Import necessary libraries
 import cv2
 import dlib
 from PIL import Image
@@ -8,7 +10,17 @@ import matplotlib.pyplot as plt
 import os
 import math
 import time
+#===========================================================
 
+#===========================================================
+# Constants
+DO_WRITE_VIDEO = False
+FACIAL_PIXEL_DEVIATION_THRESHOLD = 5
+FRAMES_PER_FACIAL_DETECTION = 5 
+#===========================================================
+
+#===========================================================
+# Set up
 # Load the pre-trained face detector from dlib
 # Load the facial landmark predictor from dlib
 face_detector = dlib.get_frontal_face_detector()
@@ -24,10 +36,16 @@ cv2.namedWindow("Right Cheek", cv2.WINDOW_NORMAL)
 cv2.resizeWindow("Right Cheek", cheek_frame_size, cheek_frame_size)  # Adjust the size as needed
 
 # Open the camera
+src = "vids/aaron_nap_20240313.mp4"
 cap = cv2.VideoCapture(0)
-# Get video details
-# fps    = int(cap.get(cv2.CAP_PROP_FPS))
 fps    = 10
+# Check if camera or videofile (src is integer or string)
+if isinstance(src, int):
+    is_camera = True
+else:
+    is_camera = False
+    fps    = int(cap.get(cv2.CAP_PROP_FPS))
+
 width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
@@ -36,58 +54,64 @@ if not os.path.exists("vids/out"):
     os.makedirs("vids/out")
 
 # Create VideoWriter object to save the output
-# fourcc = cv2.VideoWriter_fourcc(*'H264')
-fourcc          = cv2.VideoWriter_fourcc(*'avc1')
-face_vid_writer = cv2.VideoWriter("vids/out/whole_face_output.mp4", fourcc, fps, (width, height), isColor=True)
-lc_vid_writer   = cv2.VideoWriter("vids/out/left_cheek_output.mp4", fourcc, fps, (cheek_frame_size, cheek_frame_size), isColor=True)
-rc_vid_writer   = cv2.VideoWriter("vids/out/right_cheek_output.mp4", fourcc, fps, (cheek_frame_size, cheek_frame_size), isColor=True)
+if DO_WRITE_VIDEO:
+    fourcc          = cv2.VideoWriter_fourcc(*'mp4v')
+    face_vid_writer = cv2.VideoWriter("vids/out/whole_face_output.mp4", fourcc, fps, (width, height), isColor=True)
+    lc_vid_writer   = cv2.VideoWriter("vids/out/left_cheek_output.mp4", fourcc, fps, (cheek_frame_size, cheek_frame_size), isColor=True)
+    rc_vid_writer   = cv2.VideoWriter("vids/out/right_cheek_output.mp4", fourcc, fps, (cheek_frame_size, cheek_frame_size), isColor=True)
+#===========================================================
 
+#===========================================================
+# Init Variables 
 # Create an array to store red intensity over time
 red_intensity_over_time     = []
 lc_red_intensity_over_time  = []
 rc_red_intensity_over_time  = []
 lrc_red_intensity_over_time = []
-# Array for blue
-blue_intensity_over_time     = []
-lc_blue_intensity_over_time  = []
-rc_blue_intensity_over_time  = []
-lrc_blue_intensity_over_time = []
 
-blank_frame = np.ones((height, width, 3), dtype=np.uint8) * 255  # Initialize with white pixels (for RGB images)
-blank_image = Image.fromarray(blank_frame, 'RGB')
-blank_image = cv2.resize(blank_frame, (cheek_frame_size, cheek_frame_size))
-prev_rc_roi = blank_frame
-prev_lc_roi = blank_frame
+print(f"Video Details: FPS: {fps}, Width: {width}, Height: {height}")
+# Initialize with white pixels (for RGB images)
+blank_frame   = np.ones((height, width, 3), dtype=np.uint8) * 255  
+blank_image   = Image.fromarray(blank_frame, 'RGB')
+blank_image   = cv2.resize(blank_frame, (cheek_frame_size, cheek_frame_size))
+prev_rc_roi   = blank_frame
+prev_lc_roi   = blank_frame
 prev_lc_image = blank_image
 prev_rc_image = blank_image
 
+landmarks    = None
+LC_top_cur   = 0
+LC_bot_cur   = 0
+LC_left_cur  = 0 
+LC_right_cur = 0
+
+RC_top_cur   = 0
+RC_bot_cur   = 0
+RC_left_cur  = 0
+RC_right_cur = 0 
+
 # Create zeros for initial light intensity
-lc_red_intensity = 0
-rc_red_intensity = 0
-lrc_red_intensity = 0
+lc_red_intensity    = 0
+rc_red_intensity    = 0
+lrc_red_intensity   = 0
 red_intensity_frame = 0
-# Blue
-lc_blue_intensity = 0
-rc_blue_intensity = 0
-lrc_blue_intensity = 0
-blue_intensity_frame = 0
-
 num_frames = 0
-
 winSize             = 100
 runningTime         = deque([0] * winSize, maxlen=winSize)
 lc_last30seconds    = deque([0] * winSize, maxlen=winSize)
 rc_last30seconds    = deque([0] * winSize, maxlen=winSize)
 frame_last30seconds = deque([0] * winSize, maxlen=winSize)
 lrc_last30seconds   = deque([0] * winSize, maxlen=winSize)
+
 # Set up deques for rolling bpm averages
 lc_bpm    = deque([0] * winSize, maxlen=winSize)
 rc_bpm    = deque([0] * winSize, maxlen=winSize)
 frame_bpm = deque([0] * winSize, maxlen=winSize)
 lrc_bpm   = deque([0] * winSize, maxlen=winSize)
+#================================================================
 
-takeChannel = 2
-
+#===========================================================
+# Function Definitions
 def fft_on_deque(input_deque, runningTime):
     # Convert deque to numpy array
     input_array = np.array(input_deque)
@@ -165,7 +189,7 @@ def peak_analysis(input_file, output_dir, height, distance):
 
     # Calculate time intervals between peaks
     peak_time_intervals = np.diff(time[peaks])
-    # Print peak_time_intervals for verification
+     # Print peak_time_intervals for verification
     # print("Peak Time Intervals:", peak_time_intervals)
 
     # # Extract HRV features using peak_time_intervals
@@ -220,48 +244,46 @@ def peak_analysis(input_file, output_dir, height, distance):
 
     # plt.tight_layout()
     # plt.show()
-
-# start measuring the time of the program
-time_start = time.time()    
-new_pos_per_n_frame = 5 
-cur_pos_frame_cnt   = 0
+#================================================================
+# MAIN
+#================================================================
+# start measuing the time of the program
+time_start                       = time.time()    
+frames_since_last_face_detection = FRAMES_PER_FACIAL_DETECTION
 
 while True:
     # Capture frame-by-frame
     ret, frame_clean    = cap.read()
-    start_of_frame_time = time.time()
+    if is_camera:
+        start_of_frame_time = time.time()
+    else:
+        start_of_frame_time = 1/fps * num_frames
     num_frames += 1
     runningTime.append(start_of_frame_time)
 
     frame = frame_clean.copy()
 
-    # Convert the frame to grayscale
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    red_intensity_frame  = np.mean(frame[:, :, 2])
-    blue_intensity_frame = np.mean(frame[:, :, 0])
+    if frames_since_last_face_detection == FRAMES_PER_FACIAL_DETECTION:
+        # Convert the frame to grayscale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        red_intensity_frame  = np.mean(frame[:, :, 2])
 
-    # Detect faces in the frame
-    faces = face_detector(gray)
+        # Detect faces in the frame
+        faces = face_detector(gray)
+        for face_num, face in enumerate(faces):
+            # Get the facial landmarks
+            landmarks = landmark_predictor(gray, face)
 
-    for face_num, face in enumerate(faces):
-        # Get the facial landmarks
-        landmarks = landmark_predictor(gray, face)
-
-
-        if cur_pos_frame_cnt == new_pos_per_n_frame:
-            cur_pos_frame_cnt = 0
-
-        if cur_pos_frame_cnt == 0:
             # Calculate pixels corresponding to left cheek
             LC_top   = landmarks.part(36).y
             LC_bot   = landmarks.part(31).y
             LC_left  = landmarks.part(36).x 
             LC_right = landmarks.part(31).x
-        
+
             LC_top   += (LC_bot - LC_top)//3
             LC_bot   += (LC_bot - LC_top)//3
             LC_left  -= (LC_right - LC_left)//3
-            LC_right -= (LC_right - LC_left)//9
+            LC_right -= (LC_right - LC_left)//3
 
             # Calculate pixels corresponding to right cheek
             RC_top   = landmarks.part(45).y
@@ -272,55 +294,65 @@ while True:
             RC_top   += (RC_bot - RC_top)//3
             RC_bot   += (RC_bot - RC_top)//3
             RC_right += (RC_right - RC_left)//3
-            RC_left  += (RC_right - RC_left)//9
-        
-        cur_pos_frame_cnt += 1
+            RC_left  += (RC_right - RC_left)//3
 
-        eyebrow_top = min(landmarks.part(19).y, landmarks.part(24).y)
-        # Draw box censor around the eyes and eyebrows
+            # Update the current cheek positions if deviation is large
+            if (
+                abs(LC_top - LC_top_cur) > FACIAL_PIXEL_DEVIATION_THRESHOLD
+                or
+                abs(LC_right - LC_right_cur) > FACIAL_PIXEL_DEVIATION_THRESHOLD
+            ):
+                LC_top_cur   = LC_top
+                LC_bot_cur   = LC_bot
+                LC_left_cur  = LC_left
+                LC_right_cur = LC_right 
+            if (
+                abs(RC_top - RC_top_cur) > FACIAL_PIXEL_DEVIATION_THRESHOLD
+                or
+                abs(RC_right - RC_right_cur) > FACIAL_PIXEL_DEVIATION_THRESHOLD
+            ):
+                RC_top_cur   = RC_top
+                RC_bot_cur   = RC_bot
+                RC_left_cur  = RC_left
+                RC_right_cur = RC_right
+
+            eyebrow_top = min(landmarks.part(19).y, landmarks.part(24).y)
+
+            # # Draw landmarks on the face
+            # for i in range(68):
+            #     x, y = landmarks.part(i).x, landmarks.part(i).y
+            #     cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)
+            #     cv2.putText(frame, str(i), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
+
+            # One face only
+            break
+        frames_since_last_face_detection = 0
+    else:
+        frames_since_last_face_detection += 1
+
+    lc_roi = frame_clean[LC_top_cur:LC_bot_cur, LC_left_cur:LC_right_cur]
+    rc_roi = frame_clean[RC_top_cur:RC_bot_cur, RC_left_cur:RC_right_cur]
+
+    lc_red_intensity   = np.mean(lc_roi[:, :, 2])
+    rc_red_intensity   = np.mean(rc_roi[:, :, 2])
+    lrc_red_intensity  = (lc_red_intensity + rc_red_intensity) / 2
+
+    # Draw rectangles around cheeks
+    cv2.rectangle(frame, (LC_left_cur, LC_top_cur), (LC_right_cur, LC_bot_cur), (0, 0, 255), 2)
+    cv2.rectangle(frame, (RC_left_cur, RC_top_cur), (RC_right_cur, RC_bot_cur), (0, 0, 255), 2)
+    # Draw box censor around the eyes and eyebrows
+    if landmarks is not None:
         cv2.rectangle(frame, (landmarks.part(1).x, eyebrow_top), (landmarks.part(15).x, landmarks.part(29).y), (0,0,0), -1)
-
-        # # Draw landmarks on the face
-        # for i in range(68):
-        #     x, y = landmarks.part(i).x, landmarks.part(i).y
-        #     cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)
-        #     cv2.putText(frame, str(i), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
-
-        # Draw rectangles around cheeks
-        cv2.rectangle(frame, (LC_left, LC_top), (LC_right, LC_bot), (0, 0, 255), 2)
-        cv2.rectangle(frame, (RC_left, RC_top), (RC_right, RC_bot), (0, 0, 255), 2)
-        
-        lc_roi = frame_clean[LC_top:LC_bot, LC_left:LC_right]
-        rc_roi = frame_clean[RC_top:RC_bot, RC_left:RC_right]
-
-        lc_red_intensity   = np.mean(lc_roi[:, :, 2])
-        lc_blue_intensity  = np.mean(lc_roi[:, :, 0])
-        rc_red_intensity   = np.mean(rc_roi[:, :, 2])
-        rc_blue_intensity  = np.mean(rc_roi[:, :, 0])
-        lrc_red_intensity  = (lc_red_intensity + rc_red_intensity) / 2
-        lrc_blue_intensity = (lc_blue_intensity + rc_blue_intensity) / 2
-
-        # Ensure that both images have the same height
-        rc_height  = RC_bot - RC_top
-        lc_height  = RC_bot - LC_top 
-        rc_width   = RC_right - RC_left
-        lc_width   = LC_right - LC_left
-
-        # Update images if they are not empty
-        if lc_roi.size:
-            lc_image = Image.fromarray(lc_roi, 'RGB')
-            lc_image = cv2.resize(lc_roi, (cheek_frame_size, cheek_frame_size))
-            prev_lc_image = lc_image
-        if rc_roi.size:
-            rc_image = Image.fromarray(rc_roi, 'RGB')
-            rc_image = cv2.resize(rc_roi, (cheek_frame_size, cheek_frame_size))
-            prev_rc_image = rc_image
-        
-        # Draw box censor around the eyes and eyebrows in clean frame as soon as the roi is extracted
-        cv2.rectangle(frame_clean, (landmarks.part(1).x, eyebrow_top), (landmarks.part(15).x, landmarks.part(29).y), (0,0,0), -1)
-
-        # One face only
-        break
+    
+    # Update images if they are not empty
+    if lc_roi.size:
+        lc_image = Image.fromarray(lc_roi, 'RGB')
+        lc_image = cv2.resize(lc_roi, (cheek_frame_size, cheek_frame_size))
+        prev_lc_image = lc_image
+    if rc_roi.size:
+        rc_image = Image.fromarray(rc_roi, 'RGB')
+        rc_image = cv2.resize(rc_roi, (cheek_frame_size, cheek_frame_size))
+        prev_rc_image = rc_image
     
     # Update the last 30 seconds deque
     lc_last30seconds.append(lc_red_intensity)
@@ -360,11 +392,6 @@ while True:
     lc_red_intensity_over_time.append(lc_red_intensity)
     rc_red_intensity_over_time.append(rc_red_intensity)
     lrc_red_intensity_over_time.append(lrc_red_intensity)
-    # Update the blue intensity arrays
-    blue_intensity_over_time.append(blue_intensity_frame)
-    lc_blue_intensity_over_time.append(lc_blue_intensity)
-    rc_blue_intensity_over_time.append(rc_blue_intensity)
-    lrc_blue_intensity_over_time.append(lrc_blue_intensity)
 
     # # Update the last 30 seconds deque
     # lc_last30seconds.append(lc_red_intensity)
@@ -374,12 +401,12 @@ while True:
 
     # Show the image and write to video
     cv2.imshow(f"Left Cheek", prev_lc_image)
-    lc_vid_writer.write(prev_lc_image)
     cv2.imshow(f"Right Cheek", prev_rc_image)
-    rc_vid_writer.write(prev_rc_image)
-    # Display the frame
     cv2.imshow("Facial Landmarks", frame)
-    face_vid_writer.write(frame_clean)
+    if DO_WRITE_VIDEO:
+        lc_vid_writer.write(prev_lc_image)
+        rc_vid_writer.write(prev_rc_image)
+        face_vid_writer.write(frame_clean)
 
     end_of_frame_time = time.time()
     # print(f"Frame Time: {end_of_frame_time - start_of_frame_time}")
@@ -389,52 +416,36 @@ while True:
         time_end = time.time()
         break
 
-# test_time = np.arange(0, num_frames) / fps
-# print(f"previous graph estimated time: test_time: {test_time[-1]}")
-# print(f"previous final time estimated: num_frames/fps: {num_frames/fps}")
-# 
-time = np.arange(0, num_frames) / fps
+time_x = np.arange(0, num_frames) / fps
+
 tot_time = time_end - time_start
 fps = num_frames / tot_time
 print(f"Frames: {num_frames}, Time: {tot_time}, FPS: {fps}")
 
-
 # plot red intensity over time and red intensity over last 30 seconds all in one plot using subplots
 fig, axs = plt.subplots(2, 2)
 fig.suptitle('Red Intensity Over Time')
-axs[0, 0].plot(time, red_intensity_over_time)
+axs[0, 0].plot(time_x, red_intensity_over_time)
 axs[0, 0].set_title('Whole Face')
-axs[0, 1].plot(time, lc_red_intensity_over_time)
+axs[0, 1].plot(time_x, lc_red_intensity_over_time)
 axs[0, 1].set_title('Left Cheek')
-axs[1, 0].plot(time, rc_red_intensity_over_time)
+axs[1, 0].plot(time_x, rc_red_intensity_over_time)
 axs[1, 0].set_title('Right Cheek')
-axs[1, 1].plot(time, lrc_red_intensity_over_time)
+axs[1, 1].plot(time_x, lrc_red_intensity_over_time)
 axs[1, 1].set_title('Left-Right Cheek')
 plt.show()
 
 # Save the arrays as a npz file
-np.savez("red_intensity_over_time", time=time, intensity=red_intensity_over_time)
-np.savez("lc_red_intensity_over_time", time=time, intensity=lc_red_intensity_over_time)
-np.savez("rc_red_intensity_over_time", time=time, intensity=rc_red_intensity_over_time)
-np.savez("lrc_red_intensity_over_time", time=time, intensity=lrc_red_intensity_over_time)
-# Blue
-np.savez("blue_intensity_over_time", time=time, intensity=blue_intensity_over_time)
-np.savez("lc_blue_intensity_over_time", time=time, intensity=lc_blue_intensity_over_time)
-np.savez("rc_blue_intensity_over_time", time=time, intensity=rc_blue_intensity_over_time)
-np.savez("lrc_blue_intensity_over_time", time=time, intensity=lrc_blue_intensity_over_time)
+np.savez("red_intensity_over_time", time=time_x, intensity=red_intensity_over_time)
+np.savez("lc_red_intensity_over_time", time=time_x, intensity=lc_red_intensity_over_time)
+np.savez("rc_red_intensity_over_time", time=time_x, intensity=rc_red_intensity_over_time)
+np.savez("lrc_red_intensity_over_time", time=time_x, intensity=lrc_red_intensity_over_time)
 
 # # Call peak analysis function
 # peak_analysis("red_intensity_over_time.npz", "", 0, 1)
 # peak_analysis("lc_red_intensity_over_time.npz", "", 0, 1)
 # peak_analysis("rc_red_intensity_over_time.npz", "", 0, 1)
 # peak_analysis("lrc_red_intensity_over_time.npz", "", 0, 1)
-# # Peak analysis function for blue channel
-# print("#=================================================")
-# peak_analysis("blue_intensity_over_time.npz", "", 0, 1)
-# peak_analysis("lc_blue_intensity_over_time.npz", "", 0, 1)
-# peak_analysis("rc_blue_intensity_over_time.npz", "", 0, 1)
-# peak_analysis("lrc_blue_intensity_over_time.npz", "", 0, 1)
-
 print(f"Time elapsed: {num_frames/fps} seconds")
 
 # Release the camera and close all windows
